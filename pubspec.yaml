@@ -11,15 +11,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  geolocator: ^10.0.1
-  google_api_headers: ^2.0.0
+  geolocator: ^13.0.1
+  google_api_headers: ^4.2.4
   google_maps_flutter: ^2.5.0
   flutter_google_maps_webservices: ^1.1.1
   http: ^1.1.0
   provider: ^6.0.5
   tuple: ^2.0.2
   uuid: ^4.0.0
-  package_info_plus: ^4.1.0
+  package_info_plus: ^8.1.1
 
 dev_dependencies:
   flutter_test:

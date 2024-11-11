@@ -7,11 +7,11 @@ import 'package:google_maps_place_picker_mb/src/google_map_place_picker.dart'; /
 import 'dart:io' show Platform;
 
 // Your api key storage.
-import 'keys.dart';
 
 // Only to control hybrid composition and the renderer in Android
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:google_maps_place_picker_mb_demo/keys.dart';
 
 void main() => runApp(MyApp());
 
