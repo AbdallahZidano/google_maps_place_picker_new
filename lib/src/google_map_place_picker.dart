@@ -7,9 +7,9 @@ import 'package:flutter/gestures.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_place_picker_mb/google_maps_place_picker.dart';
-import 'package:google_maps_place_picker_mb/providers/place_provider.dart';
-import 'package:google_maps_place_picker_mb/src/components/animated_pin.dart';
+import 'package:google_maps_place_picker_mb_new/google_maps_place_picker.dart';
+import 'package:google_maps_place_picker_mb_new/providers/place_provider.dart';
+import 'package:google_maps_place_picker_mb_new/src/components/animated_pin.dart';
 import 'package:flutter_google_maps_webservices/geocoding.dart';
 import 'package:flutter_google_maps_webservices/places.dart';
 import 'package:provider/provider.dart';
@@ -480,7 +480,7 @@ class GoogleMapPlacePicker extends StatelessWidget {
                 result.geometry!.location.lat,
                 result.geometry!.location.lng) <=
             pickArea!.radius;
-    MaterialStateColor buttonColor = MaterialStateColor.resolveWith(
+    WidgetStateColor buttonColor = WidgetStateColor.resolveWith(
         (states) => canBePicked ? Colors.lightGreen : Colors.red);
     return Container(
       margin: EdgeInsets.all(10),
