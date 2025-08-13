@@ -173,19 +173,26 @@ class PlaceProvider extends ChangeNotifier {
   final Map<String, PlacesDetailsResponse> _placeDetailsCache = {};
   final Map<String, Future<PlacesDetailsResponse>> _placeDetailsInFlight = {};
 
-  // Optimized geocoding by location
+  // Optimized geocoding by location with timing logs
   Future<GeocodingResponse> getGeocodingByLocation(Location location,
       {String? language}) async {
     final key = "${location.lat},${location.lng},${language ?? ''}";
     if (_geocodingCache.containsKey(key)) {
+      print('[Geocoding][CACHE] $key');
       return _geocodingCache[key]!;
     }
     if (_geocodingInFlight.containsKey(key)) {
+      print('[Geocoding][INFLIGHT] $key');
       return await _geocodingInFlight[key]!;
     }
+    final start = DateTime.now();
+    print('[Geocoding][REQUEST] $key - start');
     final future = geocoding.searchByLocation(location, language: language);
     _geocodingInFlight[key] = future;
     final response = await future;
+    final duration = DateTime.now().difference(start);
+    print(
+        '[Geocoding][RESPONSE] $key - duration: ${duration.inMilliseconds} ms');
     if (response.status == "OK") {
       _geocodingCache[key] = response;
     }
@@ -193,7 +200,7 @@ class PlaceProvider extends ChangeNotifier {
     return response;
   }
 
-  // Optimized autocomplete
+  // Optimized autocomplete with timing logs
   Future<PlacesAutocompleteResponse> getAutocomplete(
     String searchTerm, {
     String? sessionToken,
@@ -220,11 +227,15 @@ class PlaceProvider extends ChangeNotifier {
       region
     ].join('|');
     if (_autocompleteCache.containsKey(key)) {
+      print('[Autocomplete][CACHE] $key');
       return _autocompleteCache[key]!;
     }
     if (_autocompleteInFlight.containsKey(key)) {
+      print('[Autocomplete][INFLIGHT] $key');
       return await _autocompleteInFlight[key]!;
     }
+    final start = DateTime.now();
+    print('[Autocomplete][REQUEST] $key - start');
     final future = places.autocomplete(
       searchTerm,
       sessionToken: sessionToken,
@@ -239,6 +250,9 @@ class PlaceProvider extends ChangeNotifier {
     );
     _autocompleteInFlight[key] = future;
     final response = await future;
+    final duration = DateTime.now().difference(start);
+    print(
+        '[Autocomplete][RESPONSE] $key - duration: ${duration.inMilliseconds} ms');
     if (response.status == "OK") {
       _autocompleteCache[key] = response;
     }
@@ -246,16 +260,20 @@ class PlaceProvider extends ChangeNotifier {
     return response;
   }
 
-  // Optimized place details
+  // Optimized place details with timing logs
   Future<PlacesDetailsResponse> getPlaceDetailsById(String placeId,
       {String? sessionToken, String? language}) async {
     final key = [placeId, sessionToken, language].join('|');
     if (_placeDetailsCache.containsKey(key)) {
+      print('[PlaceDetails][CACHE] $key');
       return _placeDetailsCache[key]!;
     }
     if (_placeDetailsInFlight.containsKey(key)) {
+      print('[PlaceDetails][INFLIGHT] $key');
       return await _placeDetailsInFlight[key]!;
     }
+    final start = DateTime.now();
+    print('[PlaceDetails][REQUEST] $key - start');
     final future = places.getDetailsByPlaceId(
       placeId,
       sessionToken: sessionToken,
@@ -263,6 +281,9 @@ class PlaceProvider extends ChangeNotifier {
     );
     _placeDetailsInFlight[key] = future;
     final response = await future;
+    final duration = DateTime.now().difference(start);
+    print(
+        '[PlaceDetails][RESPONSE] $key - duration: ${duration.inMilliseconds} ms');
     if (response.status == "OK") {
       _placeDetailsCache[key] = response;
     }
