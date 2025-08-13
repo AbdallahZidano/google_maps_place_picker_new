@@ -1,17 +1,15 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_google_maps_webservices/geocoding.dart';
+import 'package:flutter_google_maps_webservices/places.dart';
 import 'package:geolocator/geolocator.dart';
-
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_place_picker_mb_new/google_maps_place_picker.dart';
 import 'package:google_maps_place_picker_mb_new/providers/place_provider.dart';
 import 'package:google_maps_place_picker_mb_new/src/components/animated_pin.dart';
-import 'package:flutter_google_maps_webservices/geocoding.dart';
-import 'package:flutter_google_maps_webservices/places.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
@@ -124,8 +122,7 @@ class GoogleMapPlacePicker extends StatelessWidget {
 
     provider.placeSearchingState = SearchingState.Searching;
 
-    final GeocodingResponse response =
-        await provider.geocoding.searchByLocation(
+    final GeocodingResponse response = await provider.getGeocodingByLocation(
       Location(
           lat: provider.cameraPosition!.target.latitude,
           lng: provider.cameraPosition!.target.longitude),
@@ -144,7 +141,7 @@ class GoogleMapPlacePicker extends StatelessWidget {
 
     if (usePlaceDetailSearch!) {
       final PlacesDetailsResponse detailResponse =
-          await provider.places.getDetailsByPlaceId(
+          await provider.getPlaceDetailsById(
         response.results[0].placeId,
         language: language,
       );

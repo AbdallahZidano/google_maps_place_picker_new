@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_google_maps_webservices/geocoding.dart';
+import 'package:flutter_google_maps_webservices/places.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_place_picker_mb_new/src/models/pick_result.dart';
 import 'package:google_maps_place_picker_mb_new/src/place_picker.dart';
-import 'package:flutter_google_maps_webservices/geocoding.dart';
-import 'package:flutter_google_maps_webservices/places.dart';
 import 'package:http/http.dart';
 import 'package:provider/provider.dart';
 
@@ -162,5 +162,111 @@ class PlaceProvider extends ChangeNotifier {
     _mapType = MapType.values[(_mapType.index + 1) % MapType.values.length];
     if (_mapType == MapType.none) _mapType = MapType.normal;
     notifyListeners();
+  }
+
+  // Caches for API responses
+  final Map<String, GeocodingResponse> _geocodingCache = {};
+  final Map<String, Future<GeocodingResponse>> _geocodingInFlight = {};
+  final Map<String, PlacesAutocompleteResponse> _autocompleteCache = {};
+  final Map<String, Future<PlacesAutocompleteResponse>> _autocompleteInFlight =
+      {};
+  final Map<String, PlacesDetailsResponse> _placeDetailsCache = {};
+  final Map<String, Future<PlacesDetailsResponse>> _placeDetailsInFlight = {};
+
+  // Optimized geocoding by location
+  Future<GeocodingResponse> getGeocodingByLocation(Location location,
+      {String? language}) async {
+    final key = "${location.lat},${location.lng},${language ?? ''}";
+    if (_geocodingCache.containsKey(key)) {
+      return _geocodingCache[key]!;
+    }
+    if (_geocodingInFlight.containsKey(key)) {
+      return await _geocodingInFlight[key]!;
+    }
+    final future = geocoding.searchByLocation(location, language: language);
+    _geocodingInFlight[key] = future;
+    final response = await future;
+    if (response.status == "OK") {
+      _geocodingCache[key] = response;
+    }
+    _geocodingInFlight.remove(key);
+    return response;
+  }
+
+  // Optimized autocomplete
+  Future<PlacesAutocompleteResponse> getAutocomplete(
+    String searchTerm, {
+    String? sessionToken,
+    Location? location,
+    num? offset,
+    num? radius,
+    String? language,
+    List<String>? types,
+    List<Component>? components,
+    bool? strictbounds,
+    String? region,
+  }) async {
+    final key = [
+      searchTerm,
+      sessionToken,
+      location?.lat,
+      location?.lng,
+      offset,
+      radius,
+      language,
+      types?.join(','),
+      components?.map((c) => c.toString()).join(','),
+      strictbounds,
+      region
+    ].join('|');
+    if (_autocompleteCache.containsKey(key)) {
+      return _autocompleteCache[key]!;
+    }
+    if (_autocompleteInFlight.containsKey(key)) {
+      return await _autocompleteInFlight[key]!;
+    }
+    final future = places.autocomplete(
+      searchTerm,
+      sessionToken: sessionToken,
+      location: location,
+      offset: offset,
+      radius: radius,
+      language: language,
+      types: types ?? const [],
+      components: components ?? const [],
+      strictbounds: strictbounds ?? false,
+      region: region,
+    );
+    _autocompleteInFlight[key] = future;
+    final response = await future;
+    if (response.status == "OK") {
+      _autocompleteCache[key] = response;
+    }
+    _autocompleteInFlight.remove(key);
+    return response;
+  }
+
+  // Optimized place details
+  Future<PlacesDetailsResponse> getPlaceDetailsById(String placeId,
+      {String? sessionToken, String? language}) async {
+    final key = [placeId, sessionToken, language].join('|');
+    if (_placeDetailsCache.containsKey(key)) {
+      return _placeDetailsCache[key]!;
+    }
+    if (_placeDetailsInFlight.containsKey(key)) {
+      return await _placeDetailsInFlight[key]!;
+    }
+    final future = places.getDetailsByPlaceId(
+      placeId,
+      sessionToken: sessionToken,
+      language: language,
+    );
+    _placeDetailsInFlight[key] = future;
+    final response = await future;
+    if (response.status == "OK") {
+      _placeDetailsCache[key] = response;
+    }
+    _placeDetailsInFlight.remove(key);
+    return response;
   }
 }

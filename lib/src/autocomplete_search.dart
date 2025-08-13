@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_google_maps_webservices/places.dart';
 import 'package:google_maps_place_picker_mb_new/google_maps_place_picker.dart';
 import 'package:google_maps_place_picker_mb_new/providers/place_provider.dart';
 import 'package:google_maps_place_picker_mb_new/providers/search_provider.dart';
 import 'package:google_maps_place_picker_mb_new/src/components/prediction_tile.dart';
 import 'package:google_maps_place_picker_mb_new/src/controllers/autocomplete_search_controller.dart';
-import 'package:flutter_google_maps_webservices/places.dart';
 import 'package:provider/provider.dart';
 
 class AutoCompleteSearch extends StatefulWidget {
@@ -295,7 +295,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
 
     if (searchTerm.isNotEmpty) {
       final PlacesAutocompleteResponse response =
-          await provider.places.autocomplete(
+          await provider.getAutocomplete(
         searchTerm,
         sessionToken: widget.sessionToken,
         location: provider.currentPosition == null
