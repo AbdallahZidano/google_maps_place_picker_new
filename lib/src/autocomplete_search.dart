@@ -293,6 +293,10 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
   _performAutoCompleteSearch(String searchTerm) async {
     PlaceProvider provider = PlaceProvider.of(context, listen: false);
 
+    // Use the language from widget or fallback to device locale
+    String language = widget.autocompleteLanguage ??
+        Localizations.localeOf(context).toLanguageTag();
+
     if (searchTerm.isNotEmpty) {
       final PlacesAutocompleteResponse response =
           await provider.getAutocomplete(
@@ -305,7 +309,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
                 lng: provider.currentPosition!.longitude),
         offset: widget.autocompleteOffset,
         radius: widget.autocompleteRadius,
-        language: widget.autocompleteLanguage,
+        language: language,
         types: widget.autocompleteTypes ?? const [],
         components: widget.autocompleteComponents ?? const [],
         strictbounds: widget.strictbounds ?? false,

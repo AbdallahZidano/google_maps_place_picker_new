@@ -242,11 +242,21 @@ class _PlacePickerState extends State<PlacePicker> {
   SearchBarController searchBarController = SearchBarController();
   bool showIntroModal = true;
 
+  late String effectiveLanguage;
+
   @override
   void initState() {
     super.initState();
-
+    // effectiveLanguage will be set in didChangeDependencies
     _futureProvider = _initPlaceProvider();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Use widget.autocompleteLanguage if provided, otherwise use device locale
+    effectiveLanguage = widget.autocompleteLanguage ??
+        Localizations.localeOf(context).toLanguageTag();
   }
 
   @override
@@ -387,7 +397,7 @@ class _PlacePickerState extends State<PlacePicker> {
               },
               autocompleteOffset: widget.autocompleteOffset,
               autocompleteRadius: widget.autocompleteRadius,
-              autocompleteLanguage: widget.autocompleteLanguage,
+              autocompleteLanguage: effectiveLanguage,
               autocompleteComponents: widget.autocompleteComponents,
               autocompleteTypes: widget.autocompleteTypes,
               strictbounds: widget.strictbounds,
@@ -408,7 +418,7 @@ class _PlacePickerState extends State<PlacePicker> {
     final PlacesDetailsResponse response = await provider!.getPlaceDetailsById(
       prediction.placeId!,
       sessionToken: provider!.sessionToken,
-      language: widget.autocompleteLanguage,
+      language: effectiveLanguage,
     );
 
     if (response.errorMessage?.isNotEmpty == true ||
@@ -473,7 +483,7 @@ class _PlacePickerState extends State<PlacePicker> {
       usePlaceDetailSearch: widget.usePlaceDetailSearch,
       onMapCreated: widget.onMapCreated,
       selectInitialPosition: widget.selectInitialPosition,
-      language: widget.autocompleteLanguage,
+      language: effectiveLanguage,
       pickArea: widget.pickArea,
       forceSearchOnZoomChanged: widget.forceSearchOnZoomChanged,
       hidePlaceDetailsWhenDraggingPin: widget.hidePlaceDetailsWhenDraggingPin,

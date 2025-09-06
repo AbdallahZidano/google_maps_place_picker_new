@@ -102,73 +102,11 @@ class GoogleMapPlacePicker extends StatelessWidget {
   /// Use never scrollable scroll-view with maximum dimensions to prevent unnecessary re-rendering.
   final bool fullMotion;
 
-  _searchByCameraLocation(PlaceProvider provider) async {
-    // We don't want to search location again if camera location is changed by zooming in/out.
-    if (forceSearchOnZoomChanged == false &&
-        provider.prevCameraPosition != null &&
-        provider.prevCameraPosition!.target.latitude ==
-            provider.cameraPosition!.target.latitude &&
-        provider.prevCameraPosition!.target.longitude ==
-            provider.cameraPosition!.target.longitude) {
-      provider.placeSearchingState = SearchingState.Idle;
-      return;
-    }
-
-    if (provider.cameraPosition == null) {
-      // Camera position cannot be determined for some reason ...
-      provider.placeSearchingState = SearchingState.Idle;
-      return;
-    }
-
-    provider.placeSearchingState = SearchingState.Searching;
-
-    final GeocodingResponse response = await provider.getGeocodingByLocation(
-      Location(
-          lat: provider.cameraPosition!.target.latitude,
-          lng: provider.cameraPosition!.target.longitude),
-      language: language,
-    );
-
-    if (response.errorMessage?.isNotEmpty == true ||
-        response.status == "REQUEST_DENIED") {
-      print("Camera Location Search Error: " + response.errorMessage!);
-      if (onSearchFailed != null) {
-        onSearchFailed!(response.status);
-      }
-      provider.placeSearchingState = SearchingState.Idle;
-      return;
-    }
-
-    if (usePlaceDetailSearch!) {
-      final PlacesDetailsResponse detailResponse =
-          await provider.getPlaceDetailsById(
-        response.results[0].placeId,
-        language: language,
-      );
-
-      if (detailResponse.errorMessage?.isNotEmpty == true ||
-          detailResponse.status == "REQUEST_DENIED") {
-        print("Fetching details by placeId Error: " +
-            detailResponse.errorMessage!);
-        if (onSearchFailed != null) {
-          onSearchFailed!(detailResponse.status);
-        }
-        provider.placeSearchingState = SearchingState.Idle;
-        return;
-      }
-
-      provider.selectedPlace =
-          PickResult.fromPlaceDetailResult(detailResponse.result);
-    } else {
-      provider.selectedPlace =
-          PickResult.fromGeocodingResult(response.results[0]);
-    }
-
-    provider.placeSearchingState = SearchingState.Idle;
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Ensure language is always set, fallback to device locale if not provided
+    final String effectiveLanguage =
+        language ?? Localizations.localeOf(context).toLanguageTag();
     return Stack(
       children: <Widget>[
         if (this.fullMotion)
@@ -180,11 +118,14 @@ class GoogleMapPlacePicker extends StatelessWidget {
                   child: Stack(
                     alignment: AlignmentDirectional.center,
                     children: [
-                      _buildGoogleMap(context),
+                      _buildGoogleMap(context, effectiveLanguage),
                       _buildPin(),
                     ],
                   ))),
-        if (!this.fullMotion) ...[_buildGoogleMap(context), _buildPin()],
+        if (!this.fullMotion) ...[
+          _buildGoogleMap(context, effectiveLanguage),
+          _buildPin()
+        ],
         _buildFloatingCard(),
         _buildMapIcons(context),
         _buildZoomButtons()
@@ -192,7 +133,15 @@ class GoogleMapPlacePicker extends StatelessWidget {
     );
   }
 
-  Widget _buildGoogleMapInner(PlaceProvider provider, MapType mapType) {
+  Widget _buildGoogleMap(BuildContext context, String effectiveLanguage) {
+    return Selector<PlaceProvider, MapType>(
+        selector: (_, provider) => provider.mapType,
+        builder: (_, data, __) => this._buildGoogleMapInner(
+            PlaceProvider.of(context, listen: false), data, effectiveLanguage));
+  }
+
+  Widget _buildGoogleMapInner(
+      PlaceProvider provider, MapType mapType, String effectiveLanguage) {
     CameraPosition initialCameraPosition =
         CameraPosition(target: this.initialTarget, zoom: 15);
     return GoogleMap(
@@ -216,7 +165,7 @@ class GoogleMapPlacePicker extends StatelessWidget {
         // When select initialPosition set to true.
         if (selectInitialPosition!) {
           provider.setCameraPosition(initialCameraPosition);
-          _searchByCameraLocation(provider);
+          _searchByCameraLocation(provider, effectiveLanguage);
         }
         onMapCreated?.call(controller);
       },
@@ -237,7 +186,7 @@ class GoogleMapPlacePicker extends StatelessWidget {
             }
             provider.debounceTimer =
                 Timer(Duration(milliseconds: debounceMilliseconds!), () {
-              _searchByCameraLocation(provider);
+              _searchByCameraLocation(provider, effectiveLanguage);
             });
           }
         }
@@ -268,11 +217,70 @@ class GoogleMapPlacePicker extends StatelessWidget {
     );
   }
 
-  Widget _buildGoogleMap(BuildContext context) {
-    return Selector<PlaceProvider, MapType>(
-        selector: (_, provider) => provider.mapType,
-        builder: (_, data, __) => this._buildGoogleMapInner(
-            PlaceProvider.of(context, listen: false), data));
+  void _searchByCameraLocation(
+      PlaceProvider provider, String effectiveLanguage) async {
+    // We don't want to search location again if camera location is changed by zooming in/out.
+    if (forceSearchOnZoomChanged == false &&
+        provider.prevCameraPosition != null &&
+        provider.prevCameraPosition!.target.latitude ==
+            provider.cameraPosition!.target.latitude &&
+        provider.prevCameraPosition!.target.longitude ==
+            provider.cameraPosition!.target.longitude) {
+      provider.placeSearchingState = SearchingState.Idle;
+      return;
+    }
+
+    if (provider.cameraPosition == null) {
+      // Camera position cannot be determined for some reason ...
+      provider.placeSearchingState = SearchingState.Idle;
+      return;
+    }
+
+    provider.placeSearchingState = SearchingState.Searching;
+
+    final GeocodingResponse response = await provider.getGeocodingByLocation(
+      Location(
+          lat: provider.cameraPosition!.target.latitude,
+          lng: provider.cameraPosition!.target.longitude),
+      language: effectiveLanguage,
+    );
+
+    if (response.errorMessage?.isNotEmpty == true ||
+        response.status == "REQUEST_DENIED") {
+      print("Camera Location Search Error: " + response.errorMessage!);
+      if (onSearchFailed != null) {
+        onSearchFailed!(response.status);
+      }
+      provider.placeSearchingState = SearchingState.Idle;
+      return;
+    }
+
+    if (usePlaceDetailSearch!) {
+      final PlacesDetailsResponse detailResponse =
+          await provider.getPlaceDetailsById(
+        response.results[0].placeId,
+        language: effectiveLanguage,
+      );
+
+      if (detailResponse.errorMessage?.isNotEmpty == true ||
+          detailResponse.status == "REQUEST_DENIED") {
+        print("Fetching details by placeId Error: " +
+            detailResponse.errorMessage!);
+        if (onSearchFailed != null) {
+          onSearchFailed!(detailResponse.status);
+        }
+        provider.placeSearchingState = SearchingState.Idle;
+        return;
+      }
+
+      provider.selectedPlace =
+          PickResult.fromPlaceDetailResult(detailResponse.result);
+    } else {
+      provider.selectedPlace =
+          PickResult.fromGeocodingResult(response.results[0]);
+    }
+
+    provider.placeSearchingState = SearchingState.Idle;
   }
 
   Widget _buildPin() {
